@@ -3,7 +3,7 @@ package com.school.sba;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-@SpringBootApplication(scanBasePackages= {"com.school.sba"})
+@SpringBootApplication
 public class SchoolBoardApiApplication {
 
 	public static void main(String[] args) {

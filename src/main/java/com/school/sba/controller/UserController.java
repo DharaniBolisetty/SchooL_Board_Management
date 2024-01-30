@@ -35,7 +35,7 @@ public class UserController {
 		return userService.addOtherUser(userRequest);
 	}
 	
-	@PreAuthorize("hasAuthority('ADMIN') OR hasAuthority('STUDENT')")
+	
 	@GetMapping("/users/{userId}")
 	public ResponseEntity<ResponseStructure<UserResponse>> findUser(@PathVariable("userId") int userId){
 		return userService.findUser(userId);

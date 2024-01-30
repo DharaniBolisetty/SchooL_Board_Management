@@ -1,8 +1,11 @@
 	package com.school.sba.entity;
 
+import java.time.DayOfWeek;
 import java.util.List;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -31,13 +34,13 @@ public class School {
 	private String schoolEmailId;
 	private String schoolAddress;
 	
+	@Enumerated(EnumType.STRING)
+	private DayOfWeek weekOffDay;
 	
 	@OneToOne
 	private Schedule schedule;
 	
 	@OneToMany(mappedBy = "school")
 	private List<AcademicProgram> listOfAcademicPrograms;
-	
-
 	
 }

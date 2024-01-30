@@ -1,4 +1,7 @@
-package com.school.sba.serviceimpl;
+package com.school.sba.serviceImpl;
+
+import java.time.DayOfWeek;
+import java.util.EnumSet;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -8,14 +11,17 @@ import org.springframework.stereotype.Service;
 
 import com.school.sba.entity.School;
 import com.school.sba.enums.UserRole;
+import com.school.sba.exception.InvalidWeekDayException;
+import com.school.sba.exception.SchoolAlreadyPresentException;
 import com.school.sba.exception.SchoolCannotBeCreatedException;
-import com.school.sba.exception.SchoolNotFoundByIdException;
+import com.school.sba.exception.SchoolNotFoundException;
 import com.school.sba.exception.UserNotFoundByIdException;
 import com.school.sba.repository.SchoolRepository;
 import com.school.sba.repository.UserRepository;
 import com.school.sba.requestdto.SchoolRequest;
 import com.school.sba.responsedto.SchoolResponse;
 import com.school.sba.service.SchoolService;
+import com.school.sba.util.ResponseEntityProxy;
 import com.school.sba.util.ResponseStructure;
 
 
@@ -28,9 +34,6 @@ public class SchoolServiceImpl implements SchoolService{
 	@Autowired
 	private UserRepository userRepo;
 
-	@Autowired
-	private ResponseStructure<SchoolResponse> responseStructure;
-
 
 	private School mapToSchool(SchoolRequest schoolRequest) {
 		return School.builder()
@@ -38,6 +41,7 @@ public class SchoolServiceImpl implements SchoolService{
 				.schoolEmailId(schoolRequest.getSchoolEmailId())
 				.schoolContactNumber(schoolRequest.getSchoolContactNumber())
 				.schoolAddress(schoolRequest.getSchoolAddress())
+				.weekOffDay(DayOfWeek.valueOf(schoolRequest.getWeekOffDay().toUpperCase()))
 				.build();
 	}
 
@@ -48,35 +52,40 @@ public class SchoolServiceImpl implements SchoolService{
 				.schoolEmailId(school.getSchoolEmailId())
 				.schoolContactNumber(school.getSchoolContactNumber())
 				.schoolAddress(school.getSchoolAddress())
+				.weekOfDay(school.getWeekOffDay())
 				.build();
 	}
 
 	@Override
 	public ResponseEntity<ResponseStructure<SchoolResponse>> createSchool(SchoolRequest schoolRequest){
 
+		if(!schoolRepo.findAll().isEmpty())
+			throw new SchoolAlreadyPresentException("school already exist");
+		
 		String username = SecurityContextHolder.getContext()
 				.getAuthentication()
 				.getName();
 		
-		// no need of taking the userId from the url beacuse we are retriving the username from the securityContextHolder.
-		// no need of passing the userId unless or until we have to deal with the another user.
-		
 		return userRepo.findByUserName(username)
 				.map(user -> {
+					
+					DayOfWeek weekOffDay = DayOfWeek.valueOf(schoolRequest.getWeekOffDay().toUpperCase());
+					if(!EnumSet.allOf(DayOfWeek.class).contains(weekOffDay))
+						throw new InvalidWeekDayException("invalid week day");
+					
+					
 					if(user.getUserRole().equals(UserRole.ADMIN)) {
 						if(user.getSchool() == null) {
 							School school = schoolRepo.save(mapToSchool(schoolRequest));
-
-							userRepo.findAll().forEach(userFromRepo ->{
+							
+							userRepo.findAll().forEach(userFromRepo -> {
 								userFromRepo.setSchool(school);
 								userRepo.save(user);
 							});
-							
-							responseStructure.setStatus(HttpStatus.CREATED.value());
-							responseStructure.setMessage("School inserted successfully");
-							responseStructure.setData(mapToUserResponse(school));
 
-							return new ResponseEntity<ResponseStructure<SchoolResponse>>(responseStructure, HttpStatus.CREATED);
+							return ResponseEntityProxy.setResponseStructure(HttpStatus.CREATED,
+									"School inserted successfully",
+									mapToUserResponse(school));
 						}
 						else {
 							throw new SchoolCannotBeCreatedException("school is already present");
@@ -93,59 +102,39 @@ public class SchoolServiceImpl implements SchoolService{
 
 
 	@Override
-	public ResponseEntity<ResponseStructure<SchoolResponse>> updateSchool(Integer schoolId, SchoolRequest schoolRequest)
-			throws SchoolNotFoundByIdException {
-
-		return schoolRepo.findById(schoolId)
-				.map( school -> {
-					school = mapToSchool(schoolRequest);
-					school.setSchoolId(schoolId);
-					school = schoolRepo.save(school);
-					
-					responseStructure.setStatus(HttpStatus.OK.value());
-					responseStructure.setMessage("School data updated successfully in database");
-					responseStructure.setData(mapToUserResponse(school));
-
-					return new ResponseEntity<ResponseStructure<SchoolResponse>>(responseStructure, HttpStatus.OK);
-				})
-				.orElseThrow(() -> new SchoolNotFoundByIdException("school object cannot be updated due to absence of technical problems"));
-
+	public ResponseEntity<ResponseStructure<SchoolResponse>> updateSchool(SchoolRequest schoolRequest){
+		
+		School school = schoolRepo.findAll().get(0);
+		
+		if(school == null)
+			throw new SchoolNotFoundException("school not found");
+		
+		DayOfWeek weekOffDay = DayOfWeek.valueOf(schoolRequest.getWeekOffDay().toUpperCase());
+		if(!EnumSet.allOf(DayOfWeek.class).contains(weekOffDay))
+			throw new InvalidWeekDayException("invalid week day");
+		
+		school = mapToSchool(schoolRequest);
+		school.setSchoolId(school.getSchoolId());
+		school = schoolRepo.save(school);
+		
+		return ResponseEntityProxy.setResponseStructure(HttpStatus.OK,
+				"School updated successfully",
+				mapToUserResponse(school));
+		
 	}
-	
-	/*
+
 
 	@Override
-	public ResponseEntity<ResponseStructure<SchoolResponse>> deleteSchool(Integer schoolId) {
+	public ResponseEntity<ResponseStructure<SchoolResponse>> findSchool(){
 
-		School existingSchool = schoolRepo.findById(schoolId)
-				.orElseThrow(() -> new SchoolNotFoundByIdException("school object cannot be deleted due to absence of school id"));
-
-		schoolRepo.deleteById(schoolId);
-
-		responseStructure.setStatus(HttpStatus.OK.value());
-		responseStructure.setMessage("School data deleted successfully from database");
-		responseStructure.setData(mapToUserResponse(existingSchool));
-
-		return new ResponseEntity<ResponseStructure<SchoolResponse>>(responseStructure, HttpStatus.OK);
+		School school = schoolRepo.findAll().get(0);
+		
+		if(school == null)
+			throw new SchoolNotFoundException("school not found");
+		
+		return ResponseEntityProxy.setResponseStructure(HttpStatus.FOUND,
+				"school found successfully",
+				mapToUserResponse(school));
 	}
-
-	@Override
-	public ResponseEntity<ResponseStructure<SchoolResponse>> findSchool(Integer schoolId)
-			throws SchoolNotFoundByIdException {
-
-		School fetchedSchool = schoolRepo.findById(schoolId)
-				.orElseThrow(() -> new SchoolNotFoundByIdException("School object cannot be fetched because it is not present in DB"));
-
-
-		responseStructure.setStatus(HttpStatus.FOUND.value());
-		responseStructure.setMessage("School data found in database");
-		responseStructure.setData(mapToUserResponse(fetchedSchool));
-
-		return new ResponseEntity<ResponseStructure<SchoolResponse>>(responseStructure, HttpStatus.FOUND);
-
-	}
-	
-	*/
-
 
 }
