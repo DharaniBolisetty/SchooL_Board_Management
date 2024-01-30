@@ -1,5 +1,6 @@
 package com.school.sba.serviceImpl;
 
+
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -73,8 +74,6 @@ public class ClassHourServiceImpl implements ClassHourService {
 	}
 
 	private boolean isRoomReserved(LocalDateTime classBeginsAt,LocalDateTime classEndsAt, int classRoomNumber) {
-		System.out.println("isroomreserved");
-		System.out.println(classHourRepository.existsByClassBeginsAtAndClassRoomNumber(classBeginsAt, classRoomNumber));
 		return classHourRepository.existsByClassBeginsAtAndClassRoomNumber(classBeginsAt, classRoomNumber);
 	}
 
@@ -223,9 +222,7 @@ public class ClassHourServiceImpl implements ClassHourService {
 						LocalDateTime currentDateTime = LocalDateTime.now();
 
 						if(isRoomReserved(classBeginsAt,classEndsAt, classHourRequest.getClassRoomNumber())) {				
-							System.out.println(isRoomReserved(classBeginsAt,classEndsAt, classHourRequest.getClassRoomNumber()));
 							throw new RoomAlreadyAssignedException("room already reserved");
-							//						continue;
 						}
 
 						if(!classHour.getClassStatus().equals(ClassStatus.BREAK_TIME) &&

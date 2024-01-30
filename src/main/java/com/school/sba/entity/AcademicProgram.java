@@ -2,9 +2,7 @@ package com.school.sba.entity;
 
 import java.time.LocalDate;
 import java.util.List;
-
 import com.school.sba.enums.ProgramType;
-
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -45,11 +43,9 @@ public class AcademicProgram {
 	private School school;
 	
 	@ManyToMany
-//	@JoinColumn(name = "subjectId")
 	private List<Subject> listOfSubject;
 	
 	@ManyToMany
-//	@JoinColumn(name = "userId")
 	private List<User> listOfUsers;
 	
 	@OneToMany(mappedBy = "academicPrograms")
