@@ -2,7 +2,9 @@ package com.school.sba.entity;
 
 import java.time.LocalDate;
 import java.util.List;
+
 import com.school.sba.enums.ProgramType;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -37,6 +39,8 @@ public class AcademicProgram {
 	private String programName;
 	private LocalDate programBeginsAt;
 	private LocalDate programEndsAt;
+	
+	private boolean isDeleted;
 	
 	@ManyToOne
 	@JoinColumn(name = "schoolId")

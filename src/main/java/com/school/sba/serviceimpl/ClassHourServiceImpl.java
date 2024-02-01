@@ -1,6 +1,5 @@
 package com.school.sba.serviceImpl;
 
-
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -265,7 +264,6 @@ public class ClassHourServiceImpl implements ClassHourService {
 			else {
 				throw new TeacherNotFoundByIdException("teacher not found");
 			}
-
 		}
 		return ResponseEntityProxy.setResponseStructure(HttpStatus.OK,
 				"class hour updated successfully",
